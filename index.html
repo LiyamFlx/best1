@@ -3,43 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="EngageSense: Analyze audience engagement in real-time with advanced audio analytics.">
     <title>EngageSense Player</title>
     <style>
         /* Global Styles */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #4caf50;
+            --background-color: #f8f8f8;
+            --text-color: #333;
+            --accent-color: #222;
+        }
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: #f8f8f8;
-            color: #333;
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             margin: auto;
             text-align: center;
+            background-color: #fff;
             padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         h1 {
+            color: var(--accent-color);
             font-size: 2.5rem;
-            color: #222;
         }
         p {
-            font-size: 1rem;
             color: #666;
+            font-size: 1rem;
+            margin: 10px 0;
         }
         .btn {
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: #fff;
-            border: none;
             padding: 10px 20px;
             font-size: 1rem;
-            cursor: pointer;
-            margin: 10px;
+            border: none;
             border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
         }
         .btn:hover {
             background-color: #0056b3;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: var(--secondary-color);
+            width: 0;
+            max-width: 100%;
+            margin: 20px auto;
+            border-radius: 5px;
+            transition: width 0.5s;
+        }
+        .chart-container {
+            margin-top: 20px;
         }
         .navigation {
             display: flex;
@@ -48,130 +76,123 @@
         }
         .arrow {
             font-size: 2rem;
-            color: #007bff;
+            color: var(--primary-color);
             cursor: pointer;
         }
         .arrow:hover {
             color: #0056b3;
         }
-        /* Screen-specific Styles */
-        .upload-container, .record-container, .results-container, .real-time-container {
-            display: none;
-        }
-        .visible {
-            display: block;
-        }
-        .upload-box, .record-box, .chart-container {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            margin: 20px 0;
-            background-color: #fff;
-        }
-        .progress-bar {
-            height: 20px;
-            background-color: #4caf50;
-            width: 50%;
-            margin: 10px auto;
-            border-radius: 5px;
-        }
-        .chart {
-            margin-top: 20px;
-        }
         .tooltip {
             position: relative;
+            display: inline-block;
             cursor: pointer;
         }
-        .tooltip:hover::after {
+        .tooltip::after {
             content: attr(data-tooltip);
             position: absolute;
             bottom: -30px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #222;
+            background-color: var(--accent-color);
             color: #fff;
             padding: 5px 10px;
             border-radius: 5px;
+            opacity: 0;
             white-space: nowrap;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+        canvas {
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
         }
     </style>
 </head>
 <body>
-
     <!-- Welcome Screen -->
-    <div id="welcome-screen" class="container visible">
+    <div id="welcome-screen" class="container">
         <h1>Welcome to EngageSense Player</h1>
-        <p>Test the energy and pulse of your audience.</p>
-        <p>Analyze audio or stream live, and EngageSense will provide feedback on crowd energy, movement, and response.</p>
-        <div class="navigation">
-            <div></div>
-            <div class="arrow" onclick="navigateTo('upload-screen')">&#x27A1;</div>
-        </div>
+        <p>Analyze audience engagement in real-time.</p>
+        <p>Upload audio or record live to see instant feedback on crowd energy, movement, and response.</p>
+        <button class="btn" onclick="navigateTo('upload-screen')">Get Started</button>
     </div>
 
     <!-- Upload Screen -->
-    <div id="upload-screen" class="container upload-container">
+    <div id="upload-screen" class="container" style="display:none;">
         <h1>Upload Track</h1>
-        <p>MP3 MP4</p>
-        <div class="upload-box">
+        <p>Supported Formats: MP3, MP4</p>
+        <div class="upload-box" style="border: 2px dashed #ccc; padding: 20px; margin: 20px;">
             <p>Drag & drop your files here</p>
             <button class="btn">Browse Files</button>
         </div>
-        <div class="progress-bar"></div>
+        <div class="progress-bar" id="upload-progress-bar"></div>
         <div class="navigation">
-            <div class="arrow" onclick="navigateTo('welcome-screen')">&#x2B05;</div>
-            <div class="arrow" onclick="navigateTo('record-screen')">&#x27A1;</div>
+            <span class="arrow" onclick="navigateTo('welcome-screen')">&#x2B05;</span>
+            <span class="arrow" onclick="navigateTo('record-screen')">&#x27A1;</span>
         </div>
     </div>
 
     <!-- Record Screen -->
-    <div id="record-screen" class="container record-container">
+    <div id="record-screen" class="container" style="display:none;">
         <h1>Record Track</h1>
-        <div class="record-box">
-            <p>00:00</p>
-            <button class="btn">Start</button>
-            <button class="btn">Stop</button>
+        <div class="record-box" style="border: 2px dashed #ccc; padding: 20px; margin: 20px;">
+            <p id="timer">00:00</p>
+            <button class="btn" onclick="startRecording()">Start</button>
+            <button class="btn" onclick="stopRecording()">Stop</button>
         </div>
         <div class="navigation">
-            <div class="arrow" onclick="navigateTo('upload-screen')">&#x2B05;</div>
-            <div class="arrow" onclick="navigateTo('results-screen')">&#x27A1;</div>
+            <span class="arrow" onclick="navigateTo('upload-screen')">&#x2B05;</span>
+            <span class="arrow" onclick="navigateTo('results-screen')">&#x27A1;</span>
         </div>
     </div>
 
     <!-- Results Screen -->
-    <div id="results-screen" class="container results-container">
+    <div id="results-screen" class="container" style="display:none;">
         <h1>Engagement Dashboard Results</h1>
         <div class="chart-container">
-            <p>Mental: <span class="tooltip" data-tooltip="Engagement of cognitive effort">40%</span></p>
-            <p>Emotional: <span class="tooltip" data-tooltip="Emotional resonance and connection">75%</span></p>
-            <p>Spiritual: <span class="tooltip" data-tooltip="Connection to meaning and purpose">60%</span></p>
-            <p>Physical: <span class="tooltip" data-tooltip="Movement and energy">80%</span></p>
+            <p>Mental: <span class="tooltip" data-tooltip="Cognitive effort and focus">70%</span></p>
+            <p>Emotional: <span class="tooltip" data-tooltip="Emotional connection and resonance">85%</span></p>
+            <p>Spiritual: <span class="tooltip" data-tooltip="Meaning and deeper purpose">60%</span></p>
+            <p>Physical: <span class="tooltip" data-tooltip="Energy and movement">80%</span></p>
         </div>
         <div class="navigation">
-            <div class="arrow" onclick="navigateTo('record-screen')">&#x2B05;</div>
-            <div class="arrow" onclick="navigateTo('real-time-screen')">&#x27A1;</div>
+            <span class="arrow" onclick="navigateTo('record-screen')">&#x2B05;</span>
+            <span class="arrow" onclick="navigateTo('real-time-screen')">&#x27A1;</span>
         </div>
     </div>
 
-    <!-- Real-Time Screen -->
-    <div id="real-time-screen" class="container real-time-container">
+    <!-- Real-Time Data Screen -->
+    <div id="real-time-screen" class="container" style="display:none;">
         <h1>Real-Time Data</h1>
-        <div class="chart-container">
-            <canvas id="realTimeChart" width="400" height="200"></canvas>
-        </div>
+        <canvas id="realTimeChart"></canvas>
         <div class="navigation">
-            <div class="arrow" onclick="navigateTo('results-screen')">&#x2B05;</div>
-            <div></div>
+            <span class="arrow" onclick="navigateTo('results-screen')">&#x2B05;</span>
         </div>
     </div>
 
     <script>
         function navigateTo(screenId) {
-            document.querySelectorAll('.container').forEach(container => {
-                container.classList.remove('visible');
-            });
-            document.getElementById(screenId).classList.add('visible');
+            const screens = document.querySelectorAll('.container');
+            screens.forEach(screen => screen.style.display = 'none');
+            document.getElementById(screenId).style.display = 'block';
+        }
+
+        function startRecording() {
+            const timer = document.getElementById('timer');
+            let seconds = 0;
+            timer.innerHTML = 'Recording...';
+            // Add recording logic here
+        }
+
+        function stopRecording() {
+            const timer = document.getElementById('timer');
+            timer.innerHTML = '00:00';
+            // Add logic to stop recording
         }
     </script>
-
 </body>
 </html>
