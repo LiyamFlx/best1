@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngageSense Player</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #222;
+        }
+        p {
+            font-size: 1rem;
+            color: #666;
+        }
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .arrow {
+            font-size: 2rem;
+            color: #007bff;
+            cursor: pointer;
+        }
+        .arrow:hover {
+            color: #0056b3;
+        }
+        /* Screen-specific Styles */
+        .upload-container, .record-container, .results-container, .real-time-container {
+            display: none;
+        }
+        .visible {
+            display: block;
+        }
+        .upload-box, .record-box, .chart-container {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #4caf50;
+            width: 50%;
+            margin: 10px auto;
+            border-radius: 5px;
+        }
+        .chart {
+            margin-top: 20px;
+        }
+        .tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #222;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="container visible">
+        <h1>Welcome to EngageSense Player</h1>
+        <p>Test the energy and pulse of your audience.</p>
+        <p>Analyze audio or stream live, and EngageSense will provide feedback on crowd energy, movement, and response.</p>
+        <div class="navigation">
+            <div></div>
+            <div class="arrow" onclick="navigateTo('upload-screen')">&#x27A1;</div>
+        </div>
+    </div>
+
+    <!-- Upload Screen -->
+    <div id="upload-screen" class="container upload-container">
+        <h1>Upload Track</h1>
+        <p>MP3 MP4</p>
+        <div class="upload-box">
+            <p>Drag & drop your files here</p>
+            <button class="btn">Browse Files</button>
+        </div>
+        <div class="progress-bar"></div>
+        <div class="navigation">
+            <div class="arrow" onclick="navigateTo('welcome-screen')">&#x2B05;</div>
+            <div class="arrow" onclick="navigateTo('record-screen')">&#x27A1;</div>
+        </div>
+    </div>
+
+    <!-- Record Screen -->
+    <div id="record-screen" class="container record-container">
+        <h1>Record Track</h1>
+        <div class="record-box">
+            <p>00:00</p>
+            <button class="btn">Start</button>
+            <button class="btn">Stop</button>
+        </div>
+        <div class="navigation">
+            <div class="arrow" onclick="navigateTo('upload-screen')">&#x2B05;</div>
+            <div class="arrow" onclick="navigateTo('results-screen')">&#x27A1;</div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="container results-container">
+        <h1>Engagement Dashboard Results</h1>
+        <div class="chart-container">
+            <p>Mental: <span class="tooltip" data-tooltip="Engagement of cognitive effort">40%</span></p>
+            <p>Emotional: <span class="tooltip" data-tooltip="Emotional resonance and connection">75%</span></p>
+            <p>Spiritual: <span class="tooltip" data-tooltip="Connection to meaning and purpose">60%</span></p>
+            <p>Physical: <span class="tooltip" data-tooltip="Movement and energy">80%</span></p>
+        </div>
+        <div class="navigation">
+            <div class="arrow" onclick="navigateTo('record-screen')">&#x2B05;</div>
+            <div class="arrow" onclick="navigateTo('real-time-screen')">&#x27A1;</div>
+        </div>
+    </div>
+
+    <!-- Real-Time Screen -->
+    <div id="real-time-screen" class="container real-time-container">
+        <h1>Real-Time Data</h1>
+        <div class="chart-container">
+            <canvas id="realTimeChart" width="400" height="200"></canvas>
+        </div>
+        <div class="navigation">
+            <div class="arrow" onclick="navigateTo('results-screen')">&#x2B05;</div>
+            <div></div>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(screenId) {
+            document.querySelectorAll('.container').forEach(container => {
+                container.classList.remove('visible');
+            });
+            document.getElementById(screenId).classList.add('visible');
+        }
+    </script>
+
+</body>
+</html>
