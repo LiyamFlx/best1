@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live Sound Processing</title>
   <style>
+    /* General Styles */
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #121212;
       color: white;
+      overflow-x: hidden;
     }
     header {
       text-align: center;
@@ -27,17 +29,25 @@
       border-radius: 8px;
       box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
     }
-    canvas {
-      width: 100%;
-      height: 300px;
-      background: #000;
-      border-radius: 8px;
+    .tooltip {
+      position: relative;
+      cursor: pointer;
     }
-    .controls {
-      display: flex;
-      justify-content: space-around;
-      margin: 20px 0;
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      z-index: 1000;
     }
+
+    /* Buttons */
     button {
       background-color: #1db954;
       color: white;
@@ -51,78 +61,167 @@
     button:hover {
       background-color: #1aa34a;
     }
-    .tabs {
+    button[disabled] {
+      background-color: gray;
+      cursor: not-allowed;
+    }
+
+    /* Input Controls */
+    .controls, .settings {
       display: flex;
-      justify-content: space-around;
-      margin: 20px 0;
-      cursor: pointer;
-    }
-    .tab {
-      padding: 10px 20px;
-      background: #333;
-      border-radius: 5px;
-      color: white;
-    }
-    .tab.active {
-      background: #1db954;
-    }
-    .settings {
+      flex-direction: column;
+      gap: 10px;
       margin: 20px 0;
     }
-    .settings label {
+    label {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+    input[type="range"], input[type="file"] {
+      width: 100%;
+    }
+
+    /* Responsive Canvas */
+    canvas {
       display: block;
-      margin: 10px 0;
+      margin: 0 auto;
+      width: 100%;
+      height: 300px;
+      background: #000;
+      border-radius: 8px;
     }
-    .export-btn {
-      margin: 20px auto;
+
+    /* Accessibility Features */
+    .skip-nav {
+      position: absolute;
+      left: -9999px;
+    }
+    .skip-nav:focus {
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: #1db954;
+      color: white;
       text-align: center;
+      padding: 10px;
+    }
+
+    /* Onboarding Styles */
+    .onboarding {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .onboarding button {
+      margin-top: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      header {
+        font-size: 20px;
+      }
+      button {
+        padding: 8px 16px;
+      }
     }
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-nav">Skip to Main Content</a>
   <header>Live Sound Processing</header>
-  <div class="container">
-    <div class="tabs">
-      <div class="tab active" id="tab-1">Track 1</div>
-      <div class="tab" id="tab-2">Track 2</div>
-    </div>
-    <canvas id="waveform"></canvas>
-    <div class="controls">
-      <button id="start">Start Analysis</button>
-      <button id="stop">Stop Analysis</button>
-    </div>
-    <div class="settings">
-      <h3>DSP Settings</h3>
-      <label>
-        EQ Frequency: <input type="range" id="eq-frequency" min="20" max="20000" step="10">
-      </label>
-      <label>
-        Reverb: <input type="range" id="reverb" min="0" max="100" step="1">
-      </label>
-      <label>
-        Compression: <input type="range" id="compression" min="0" max="100" step="1">
-      </label>
-    </div>
-    <div class="export-btn">
-      <button id="export">Export Data</button>
+
+  <!-- Onboarding -->
+  <div class="onboarding" id="onboarding">
+    <div>
+      <h2>Welcome to Live Sound Processing</h2>
+      <p>
+        Analyze and process live sound across multiple dimensions, including Physical, Mental, Emotional, and Spiritual engagement.
+      </p>
+      <button id="start-onboarding">Get Started</button>
     </div>
   </div>
-  <script>
-    let audioContext, analyser, dataArray, source, bufferLength, canvas, canvasContext;
 
-    // Initialize Audio Context and Canvas
-    function initAudio() {
+  <!-- Main Content -->
+  <main id="main-content" class="hidden">
+    <div class="container">
+      <!-- Track Upload -->
+      <section>
+        <h2>Upload Your Track</h2>
+        <label for="file-upload" class="tooltip" data-tooltip="Supported Formats: MP3, WAV">
+          Choose an audio file:
+          <input type="file" id="file-upload" accept=".mp3, .wav">
+        </label>
+      </section>
+
+      <!-- DSP Settings -->
+      <section class="settings">
+        <h2>DSP Settings</h2>
+        <label>
+          Equalizer Frequency
+          <input type="range" id="eq-frequency" min="20" max="20000" step="10">
+        </label>
+        <label>
+          Reverb
+          <input type="range" id="reverb" min="0" max="100" step="1">
+        </label>
+        <label>
+          Compression
+          <input type="range" id="compression" min="0" max="100" step="1">
+        </label>
+      </section>
+
+      <!-- Live Analysis -->
+      <section>
+        <h2>Live Analysis</h2>
+        <canvas id="waveform"></canvas>
+        <div class="controls">
+          <button id="start-analysis">Start</button>
+          <button id="stop-analysis" disabled>Stop</button>
+        </div>
+      </section>
+
+      <!-- Export Data -->
+      <section>
+        <button id="export">Export Analysis Data</button>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // Onboarding Logic
+    document.getElementById("start-onboarding").addEventListener("click", () => {
+      document.getElementById("onboarding").classList.add("hidden");
+      document.getElementById("main-content").classList.remove("hidden");
+    });
+
+    // Audio Analysis
+    let audioContext, analyser, dataArray, source, canvas, canvasContext;
+
+    function initializeAudio() {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
-      bufferLength = analyser.frequencyBinCount;
-      dataArray = new Uint8Array(bufferLength);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
 
       canvas = document.getElementById("waveform");
       canvasContext = canvas.getContext("2d");
     }
 
-    // Draw Waveform
     function drawWaveform() {
       const WIDTH = canvas.width;
       const HEIGHT = canvas.height;
@@ -139,10 +238,10 @@
         canvasContext.strokeStyle = "#1db954";
         canvasContext.beginPath();
 
-        let sliceWidth = WIDTH / bufferLength;
+        let sliceWidth = WIDTH / dataArray.length;
         let x = 0;
 
-        for (let i = 0; i < bufferLength; i++) {
+        for (let i = 0; i < dataArray.length; i++) {
           let v = dataArray[i] / 128.0;
           let y = (v * HEIGHT) / 2;
 
@@ -154,50 +253,31 @@
 
           x += sliceWidth;
         }
+
         canvasContext.lineTo(WIDTH, HEIGHT / 2);
         canvasContext.stroke();
       }
       draw();
     }
 
-    // Start Audio Analysis
-    function startAnalysis() {
+    // Event Listeners
+    document.getElementById("start-analysis").addEventListener("click", () => {
+      initializeAudio();
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
           source = audioContext.createMediaStreamSource(stream);
           source.connect(analyser);
           drawWaveform();
-        })
-        .catch(err => console.error("Error accessing microphone:", err));
-    }
-
-    // Stop Audio Analysis
-    function stopAnalysis() {
-      if (source) {
-        source.disconnect();
-      }
-    }
-
-    // Export Data
-    function exportData() {
-      console.log("Exporting Data...");
-      // Add logic to export data or visualizations
-    }
-
-    // Event Listeners
-    document.getElementById("start").addEventListener("click", () => {
-      initAudio();
-      startAnalysis();
+          document.getElementById("stop-analysis").disabled = false;
+        });
     });
-    document.getElementById("stop").addEventListener("click", stopAnalysis);
-    document.getElementById("export").addEventListener("click", exportData);
 
-    // Tab Switching Logic
-    document.querySelectorAll(".tab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        tab.classList.add("active");
-      });
+    document.getElementById("stop-analysis").addEventListener("click", () => {
+      if (source) source.disconnect();
+    });
+
+    document.getElementById("export").addEventListener("click", () => {
+      alert("Export functionality not implemented yet.");
     });
   </script>
 </body>
