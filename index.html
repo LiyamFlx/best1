@@ -3,206 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Real-Time Engagement Data</title>
+  <title>EngageSense</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
+      font-family: Arial, sans-serif;
       background-color: #121212;
       color: #ffffff;
-      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
     }
     .container {
-      max-width: 1200px;
-      margin: 0 auto;
+      max-width: 900px;
+      margin: 20px auto;
       padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
-    p {
-      font-size: 1.2em;
-      margin-bottom: 30px;
-      color: #bbbbbb;
-    }
-    #chart-container {
-      position: relative;
-      margin: auto;
-      height: 500px;
-      width: 100%;
       background-color: #1e1e1e;
       border-radius: 10px;
-      padding: 20px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+      display: none;
+    }
+    .container.active {
+      display: block;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
     canvas {
-      border-radius: 10px;
+      display: block;
+      max-width: 100%;
+      margin: 20px auto;
     }
-    .legend {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 1em;
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
     }
-    .tooltip {
-      font-size: 0.9em;
-    }
-    .export-buttons {
-      margin-top: 20px;
-    }
-    button {
-      background-color: #28a745;
+    .controls button {
+      background-color: #2a2a2a;
       color: #ffffff;
       border: none;
       padding: 10px 20px;
-      margin: 5px;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 1em;
     }
-    button:hover {
-      background-color: #218838;
+    .controls button:hover {
+      background-color: #3e3e3e;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Real-Time Engagement Data</h1>
-    <p>Live tracking of engagement levels across Physical, Mental, Emotional, and Spiritual dimensions.</p>
-    <div id="chart-container">
-      <canvas id="engagementChart"></canvas>
+  <!-- Welcome Screen -->
+  <div class="container active" id="welcomeScreen">
+    <h1>Welcome to EngageSense</h1>
+    <p>Analyze real-time engagement across Physical, Spiritual, Mental, and Emotional dimensions.</p>
+    <button onclick="showScreen('uploadScreen')">Start</button>
+  </div>
+
+  <!-- Upload/Record Screen -->
+  <div class="container" id="uploadScreen">
+    <h2>Upload or Record Audio</h2>
+    <div>
+      <h3>Upload Track</h3>
+      <input type="file" id="fileInput">
     </div>
-    <div class="export-buttons">
-      <button id="exportImage">Export Chart as Image</button>
-      <button id="downloadCSV">Download Data as CSV</button>
+    <div>
+      <h3>Record Audio</h3>
+      <button onclick="startRecording()">Start</button>
+      <button onclick="stopRecording()">Stop</button>
+    </div>
+    <div class="controls">
+      <button onclick="showScreen('welcomeScreen')">Back</button>
+      <button onclick="showScreen('realTimeScreen')">Next</button>
     </div>
   </div>
+
+  <!-- Real-Time Engagement Data -->
+  <div class="container" id="realTimeScreen">
+    <h2>Real-Time Engagement Data</h2>
+    <canvas id="realTimeChart"></canvas>
+    <div class="controls">
+      <button onclick="showScreen('uploadScreen')">Back</button>
+      <button onclick="showScreen('resultsScreen')">Next</button>
+    </div>
+  </div>
+
+  <!-- Engagement Results -->
+  <div class="container" id="resultsScreen">
+    <h2>Engagement Results</h2>
+    <canvas id="resultsChart"></canvas>
+    <div class="controls">
+      <button onclick="showScreen('realTimeScreen')">Back</button>
+      <button onclick="exportResults()">Export Results</button>
+    </div>
+  </div>
+
   <script>
-    // Dataset for the chart
-    const labels = ['10:00', '10:01', '10:02', '10:03', '10:04', '10:05'];
-    const data = {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Physical Engagement',
-          data: [40, 50, 55, 45, 60, 70],
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'Mental Engagement',
-          data: [30, 45, 40, 35, 50, 55],
-          borderColor: 'rgb(255, 205, 86)',
-          backgroundColor: 'rgba(255, 205, 86, 0.2)',
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'Emotional Engagement',
-          data: [20, 25, 35, 30, 40, 45],
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.4,
-          fill: true
-        },
-        {
-          label: 'Spiritual Engagement',
-          data: [15, 20, 25, 35, 40, 50],
-          borderColor: 'rgb(54, 162, 235)',
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          tension: 0.4,
-          fill: true
-        }
-      ]
-    };
+    // Show specific screen
+    function showScreen(screenId) {
+      document.querySelectorAll('.container').forEach(container => container.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
 
-    // Chart configuration
-    const config = {
+    // Real-Time Chart
+    const realTimeCtx = document.getElementById('realTimeChart').getContext('2d');
+    const realTimeChart = new Chart(realTimeCtx, {
       type: 'line',
-      data: data,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#ffffff',
-              font: {
-                size: 14
-              }
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            bodyFont: {
-              size: 12
-            },
-            callbacks: {
-              label: function(tooltipItem) {
-                return `${tooltipItem.dataset.label}: ${tooltipItem.raw} %`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: '#ffffff'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: '#ffffff'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            }
-          }
-        }
-      }
-    };
-
-    // Render the chart
-    const ctx = document.getElementById('engagementChart').getContext('2d');
-    const engagementChart = new Chart(ctx, config);
-
-    // Export chart as image
-    document.getElementById('exportImage').addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.href = engagementChart.toBase64Image();
-      link.download = 'engagement_chart.png';
-      link.click();
+      data: {
+        labels: ['Physical', 'Emotional', 'Mental', 'Spiritual'],
+        datasets: [{
+          label: 'Real-Time Engagement',
+          data: [50, 60, 70, 80],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        }]
+      },
+      options: { responsive: true }
     });
 
-    // Download data as CSV
-    document.getElementById('downloadCSV').addEventListener('click', () => {
-      const csvContent = [
-        ['Time', 'Physical Engagement', 'Mental Engagement', 'Emotional Engagement', 'Spiritual Engagement'],
-        ...labels.map((label, index) => [
-          label,
-          data.datasets[0].data[index],
-          data.datasets[1].data[index],
-          data.datasets[2].data[index],
-          data.datasets[3].data[index]
-        ])
-      ]
-        .map(e => e.join(','))
-        .join('\n');
+    // Results Chart
+    const resultsCtx = document.getElementById('resultsChart').getContext('2d');
+    const resultsChart = new Chart(resultsCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Physical', 'Emotional', 'Mental', 'Spiritual'],
+        datasets: [{
+          label: 'Engagement Results',
+          data: [60, 70, 65, 75],
+          backgroundColor: ['red', 'blue', 'green', 'orange']
+        }]
+      },
+      options: { responsive: true }
+    });
 
+    // Simulate Real-Time Data Update
+    setInterval(() => {
+      realTimeChart.data.datasets[0].data = realTimeChart.data.datasets[0].data.map(() => Math.floor(Math.random() * 100));
+      realTimeChart.update();
+    }, 2000);
+
+    // Export Results
+    function exportResults() {
+      const data = resultsChart.data.datasets[0].data;
+      const csvContent = `Physical,Emotional,Mental,Spiritual\n${data.join(',')}`;
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'engagement_data.csv';
+      link.download = 'engagement_results.csv';
       link.click();
-    });
+    }
   </script>
 </body>
 </html>
