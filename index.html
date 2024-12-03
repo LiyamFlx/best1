@@ -1,171 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Sound Processing</title>
-  <style>
-    /* General Styles */
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-    }
-    header {
-      text-align: center;
-      padding: 20px;
-      background: #1db954;
-      color: white;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #1a1a1a;
-      border-radius: 8px;
-      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-    }
-    button {
-      background-color: #1db954;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #1aa34a;
-    }
-    button[disabled] {
-      background-color: gray;
-      cursor: not-allowed;
-    }
-    canvas {
-      display: block;
-      margin: 20px auto;
-      background: black;
-      border-radius: 5px;
-    }
-    .navigation-buttons {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-    }
-    @media (max-width: 768px) {
-      header {
-        font-size: 20px;
-      }
-      button {
-        padding: 8px 16px;
-        font-size: 14px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngageSense - Live Sound Processing</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1c1c1c;
+            color: #fff;
+        }
+        h1, h2, h3 {
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress {
+            width: 0%;
+            height: 20px;
+            background-color: #4CAF50;
+            transition: width 0.5s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px auto;
+        }
+        canvas {
+            background: #222;
+            border-radius: 10px;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .tooltip {
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            position: absolute;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
-  <header>Live Sound Processing</header>
-
-  <div class="container">
-    <!-- Live Analysis Section -->
-    <h2>Live Sound Analysis</h2>
-    <p>Start and analyze live audio using the buttons below. Stop the analysis anytime.</p>
-    <canvas id="waveform" width="800" height="400"></canvas>
-    <div>
-      <button id="start-analysis">Start Analysis</button>
-      <button id="stop-analysis" disabled>Stop Analysis</button>
+    <div id="welcome-screen" class="container">
+        <h1>Welcome to EngageSense</h1>
+        <p>Analyze real-time engagement across <strong>Physical, Spiritual, Mental, and Emotional</strong> dimensions.</p>
+        <button class="button" onclick="showScreen('upload-record-screen')">Start</button>
     </div>
 
-    <!-- Navigation Buttons -->
-    <div class="navigation-buttons">
-      <button id="back">Back</button>
-      <button id="next">Next</button>
+    <div id="upload-record-screen" class="container hidden">
+        <h2>Upload or Record Audio</h2>
+        <div>
+            <h3>Upload Track</h3>
+            <input type="file" id="audio-file" accept=".mp3, .wav">
+            <div class="progress-bar">
+                <div class="progress" id="upload-progress"></div>
+            </div>
+        </div>
+        <div>
+            <h3>Record Audio</h3>
+            <button class="button" onclick="startRecording()">Start</button>
+            <button class="button" onclick="stopRecording()">Stop</button>
+            <p id="recording-status">Recording Time: 0:00</p>
+        </div>
+        <div class="nav-buttons">
+            <button class="button" onclick="showScreen('welcome-screen')">Back</button>
+            <button class="button" onclick="showScreen('real-time-data-screen')">Next</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    // Audio Analysis Variables
-    let audioContext, analyser, dataArray, source, canvas, canvasContext, stream;
+    <div id="real-time-data-screen" class="container hidden">
+        <h2>Real-Time Engagement Data</h2>
+        <div class="chart-container">
+            <canvas id="engagement-chart"></canvas>
+        </div>
+        <div class="nav-buttons">
+            <button class="button" onclick="showScreen('upload-record-screen')">Back</button>
+            <button class="button" onclick="showScreen('results-screen')">Next</button>
+        </div>
+    </div>
 
-    function initializeAudio() {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
+    <div id="results-screen" class="container hidden">
+        <h2>Engagement Results</h2>
+        <div>
+            <p>View detailed insights into the engagement levels:</p>
+            <ul>
+                <li>Physical Engagement: <span id="physical-engagement">75%</span></li>
+                <li>Spiritual Engagement: <span id="spiritual-engagement">80%</span></li>
+                <li>Mental Engagement: <span id="mental-engagement">85%</span></li>
+                <li>Emotional Engagement: <span id="emotional-engagement">90%</span></li>
+            </ul>
+        </div>
+        <div>
+            <button class="button" onclick="exportData()">Export Results</button>
+        </div>
+        <div class="nav-buttons">
+            <button class="button" onclick="showScreen('real-time-data-screen')">Back</button>
+            <button class="button" onclick="showScreen('welcome-screen')">Finish</button>
+        </div>
+    </div>
 
-      canvas = document.getElementById('waveform');
-      canvasContext = canvas.getContext('2d');
-    }
-
-    function drawWaveform() {
-      const WIDTH = canvas.width;
-      const HEIGHT = canvas.height;
-      canvasContext.clearRect(0, 0, WIDTH, HEIGHT);
-
-      function draw() {
-        requestAnimationFrame(draw);
-        analyser.getByteTimeDomainData(dataArray);
-
-        canvasContext.fillStyle = 'black';
-        canvasContext.fillRect(0, 0, WIDTH, HEIGHT);
-
-        canvasContext.lineWidth = 2;
-        canvasContext.strokeStyle = '#1db954';
-        canvasContext.beginPath();
-
-        let sliceWidth = WIDTH / dataArray.length;
-        let x = 0;
-
-        for (let i = 0; i < dataArray.length; i++) {
-          let v = dataArray[i] / 128.0;
-          let y = v * HEIGHT / 2;
-
-          if (i === 0) {
-            canvasContext.moveTo(x, y);
-          } else {
-            canvasContext.lineTo(x, y);
-          }
-
-          x += sliceWidth;
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Screen Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.container').forEach(screen => screen.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
         }
 
-        canvasContext.lineTo(WIDTH, HEIGHT / 2);
-        canvasContext.stroke();
-      }
-      draw();
-    }
+        // Fake Progress for Upload
+        document.getElementById('audio-file').addEventListener('change', () => {
+            const progress = document.getElementById('upload-progress');
+            progress.style.width = '100%';
+        });
 
-    // Event Listeners for Buttons
-    document.getElementById('start-analysis').addEventListener('click', async () => {
-      initializeAudio();
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-      drawWaveform();
+        // Chart.js - Real-Time Engagement Data
+        const ctx = document.getElementById('engagement-chart').getContext('2d');
+        const engagementChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['0:00', '0:10', '0:20', '0:30', '0:40', '0:50'],
+                datasets: [
+                    { label: 'Physical', data: [40, 45, 50, 55, 60, 65], borderColor: 'red', fill: false },
+                    { label: 'Spiritual', data: [30, 35, 40, 50, 60, 70], borderColor: 'blue', fill: false },
+                    { label: 'Mental', data: [50, 55, 60, 65, 70, 75], borderColor: 'green', fill: false },
+                    { label: 'Emotional', data: [60, 65, 70, 75, 80, 85], borderColor: 'yellow', fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true }
+                }
+            }
+        });
 
-      document.getElementById('stop-analysis').disabled = false;
-      document.getElementById('start-analysis').disabled = true;
-    });
+        // Recording (Placeholder)
+        function startRecording() {
+            document.getElementById('recording-status').textContent = 'Recording...';
+        }
+        function stopRecording() {
+            document.getElementById('recording-status').textContent = 'Recording Stopped';
+        }
 
-    document.getElementById('stop-analysis').addEventListener('click', () => {
-      if (source) source.disconnect();
-      if (stream) stream.getTracks().forEach(track => track.stop());
-
-      document.getElementById('stop-analysis').disabled = true;
-      document.getElementById('start-analysis').disabled = false;
-    });
-
-    document.getElementById('back').addEventListener('click', () => {
-      alert('Back button clicked. Implement navigation here.');
-    });
-
-    document.getElementById('next').addEventListener('click', () => {
-      alert('Next button clicked. Implement navigation here.');
-    });
-  </script>
+        // Export Results
+        function exportData() {
+            alert('Export functionality coming soon!');
+        }
+    </script>
 </body>
 </html>
