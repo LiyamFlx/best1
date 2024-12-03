@@ -3,155 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EngageSense</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Live Sound Processing</title>
   <style>
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
       background-color: #121212;
-      color: #ffffff;
-      margin: 0;
-      padding: 0;
+      color: white;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: #1db954;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
     }
     .container {
-      max-width: 900px;
+      max-width: 1200px;
       margin: 20px auto;
       padding: 20px;
-      background-color: #1e1e1e;
-      border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
-      display: none;
-    }
-    .container.active {
-      display: block;
-    }
-    h1, h2 {
-      text-align: center;
-      margin-bottom: 20px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
     }
     canvas {
-      display: block;
-      max-width: 100%;
-      margin: 20px auto;
+      width: 100%;
+      height: 300px;
+      background: #000;
+      border-radius: 8px;
     }
     .controls {
       display: flex;
-      justify-content: space-between;
+      justify-content: space-around;
       margin: 20px 0;
     }
-    .controls button {
-      background-color: #2a2a2a;
-      color: #ffffff;
+    button {
+      background-color: #1db954;
+      color: white;
       border: none;
       padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
       border-radius: 5px;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #1aa34a;
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
       cursor: pointer;
     }
-    .controls button:hover {
-      background-color: #3e3e3e;
+    .tab {
+      padding: 10px 20px;
+      background: #333;
+      border-radius: 5px;
+      color: white;
+    }
+    .tab.active {
+      background: #1db954;
+    }
+    .settings {
+      margin: 20px 0;
+    }
+    .settings label {
+      display: block;
+      margin: 10px 0;
+    }
+    .export-btn {
+      margin: 20px auto;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <!-- Welcome Screen -->
-  <div class="container active" id="welcomeScreen">
-    <h1>Welcome to EngageSense</h1>
-    <p>Analyze real-time engagement across Physical, Spiritual, Mental, and Emotional dimensions.</p>
-    <button onclick="showScreen('uploadScreen')">Start</button>
-  </div>
-
-  <!-- Upload/Record Screen -->
-  <div class="container" id="uploadScreen">
-    <h2>Upload or Record Audio</h2>
-    <div>
-      <h3>Upload Track</h3>
-      <input type="file" id="fileInput">
+  <header>Live Sound Processing</header>
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" id="tab-1">Track 1</div>
+      <div class="tab" id="tab-2">Track 2</div>
     </div>
-    <div>
-      <h3>Record Audio</h3>
-      <button onclick="startRecording()">Start</button>
-      <button onclick="stopRecording()">Stop</button>
-    </div>
+    <canvas id="waveform"></canvas>
     <div class="controls">
-      <button onclick="showScreen('welcomeScreen')">Back</button>
-      <button onclick="showScreen('realTimeScreen')">Next</button>
+      <button id="start">Start Analysis</button>
+      <button id="stop">Stop Analysis</button>
+    </div>
+    <div class="settings">
+      <h3>DSP Settings</h3>
+      <label>
+        EQ Frequency: <input type="range" id="eq-frequency" min="20" max="20000" step="10">
+      </label>
+      <label>
+        Reverb: <input type="range" id="reverb" min="0" max="100" step="1">
+      </label>
+      <label>
+        Compression: <input type="range" id="compression" min="0" max="100" step="1">
+      </label>
+    </div>
+    <div class="export-btn">
+      <button id="export">Export Data</button>
     </div>
   </div>
-
-  <!-- Real-Time Engagement Data -->
-  <div class="container" id="realTimeScreen">
-    <h2>Real-Time Engagement Data</h2>
-    <canvas id="realTimeChart"></canvas>
-    <div class="controls">
-      <button onclick="showScreen('uploadScreen')">Back</button>
-      <button onclick="showScreen('resultsScreen')">Next</button>
-    </div>
-  </div>
-
-  <!-- Engagement Results -->
-  <div class="container" id="resultsScreen">
-    <h2>Engagement Results</h2>
-    <canvas id="resultsChart"></canvas>
-    <div class="controls">
-      <button onclick="showScreen('realTimeScreen')">Back</button>
-      <button onclick="exportResults()">Export Results</button>
-    </div>
-  </div>
-
   <script>
-    // Show specific screen
-    function showScreen(screenId) {
-      document.querySelectorAll('.container').forEach(container => container.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
+    let audioContext, analyser, dataArray, source, bufferLength, canvas, canvasContext;
+
+    // Initialize Audio Context and Canvas
+    function initAudio() {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+
+      canvas = document.getElementById("waveform");
+      canvasContext = canvas.getContext("2d");
     }
 
-    // Real-Time Chart
-    const realTimeCtx = document.getElementById('realTimeChart').getContext('2d');
-    const realTimeChart = new Chart(realTimeCtx, {
-      type: 'line',
-      data: {
-        labels: ['Physical', 'Emotional', 'Mental', 'Spiritual'],
-        datasets: [{
-          label: 'Real-Time Engagement',
-          data: [50, 60, 70, 80],
-          borderColor: 'rgba(75, 192, 192, 1)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        }]
-      },
-      options: { responsive: true }
-    });
+    // Draw Waveform
+    function drawWaveform() {
+      const WIDTH = canvas.width;
+      const HEIGHT = canvas.height;
+      canvasContext.clearRect(0, 0, WIDTH, HEIGHT);
 
-    // Results Chart
-    const resultsCtx = document.getElementById('resultsChart').getContext('2d');
-    const resultsChart = new Chart(resultsCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Physical', 'Emotional', 'Mental', 'Spiritual'],
-        datasets: [{
-          label: 'Engagement Results',
-          data: [60, 70, 65, 75],
-          backgroundColor: ['red', 'blue', 'green', 'orange']
-        }]
-      },
-      options: { responsive: true }
-    });
+      function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteTimeDomainData(dataArray);
 
-    // Simulate Real-Time Data Update
-    setInterval(() => {
-      realTimeChart.data.datasets[0].data = realTimeChart.data.datasets[0].data.map(() => Math.floor(Math.random() * 100));
-      realTimeChart.update();
-    }, 2000);
+        canvasContext.fillStyle = "#000";
+        canvasContext.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // Export Results
-    function exportResults() {
-      const data = resultsChart.data.datasets[0].data;
-      const csvContent = `Physical,Emotional,Mental,Spiritual\n${data.join(',')}`;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'engagement_results.csv';
-      link.click();
+        canvasContext.lineWidth = 2;
+        canvasContext.strokeStyle = "#1db954";
+        canvasContext.beginPath();
+
+        let sliceWidth = WIDTH / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          let v = dataArray[i] / 128.0;
+          let y = (v * HEIGHT) / 2;
+
+          if (i === 0) {
+            canvasContext.moveTo(x, y);
+          } else {
+            canvasContext.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+        canvasContext.lineTo(WIDTH, HEIGHT / 2);
+        canvasContext.stroke();
+      }
+      draw();
     }
+
+    // Start Audio Analysis
+    function startAnalysis() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+          drawWaveform();
+        })
+        .catch(err => console.error("Error accessing microphone:", err));
+    }
+
+    // Stop Audio Analysis
+    function stopAnalysis() {
+      if (source) {
+        source.disconnect();
+      }
+    }
+
+    // Export Data
+    function exportData() {
+      console.log("Exporting Data...");
+      // Add logic to export data or visualizations
+    }
+
+    // Event Listeners
+    document.getElementById("start").addEventListener("click", () => {
+      initAudio();
+      startAnalysis();
+    });
+    document.getElementById("stop").addEventListener("click", stopAnalysis);
+    document.getElementById("export").addEventListener("click", exportData);
+
+    // Tab Switching Logic
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+      });
+    });
   </script>
 </body>
 </html>
